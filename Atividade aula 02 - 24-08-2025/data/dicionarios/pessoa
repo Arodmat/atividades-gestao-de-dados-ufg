@@ -1,0 +1,9 @@
+{
+  "tabela": "pessoa",
+  "colunas": {
+    "id": "INT",
+    "nome": "VARCHAR(100)",
+    "data_nascimento": "DATE",
+    "salario": "DECIMAL(10,2)"
+  }
+}
