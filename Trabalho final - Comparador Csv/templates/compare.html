@@ -1,0 +1,476 @@
+{% extends "base.html" %}
+
+{% block title %}Comparar CSV{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1><i class="fas fa-exchange-alt me-2"></i>Comparar Arquivos CSV</h1>
+        <p class="text-muted">Selecione dois arquivos CSV para comparação</p>
+        
+        {% if current_user.nivel == 'usuario' %}
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle me-2"></i>
+            <strong>Usuário Teste:</strong> Suas comparações são salvas no sistema e podem ser visualizadas por administradores no histórico geral.
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% if not result %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="file1" class="form-label">
+                                    <i class="fas fa-file-upload me-2"></i>Primeiro Arquivo CSV
+                                </label>
+                                <input type="file" class="form-control" id="file1" name="file1" 
+                                       accept=".csv" required>
+                                <div class="form-text">Arquivo CSV de referência</div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="file2" class="form-label">
+                                    <i class="fas fa-file-upload me-2"></i>Segundo Arquivo CSV
+                                </label>
+                                <input type="file" class="form-control" id="file2" name="file2" 
+                                       accept=".csv" required>
+                                <div class="form-text">Arquivo CSV para comparação</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="key_column" class="form-label">
+                            <i class="fas fa-key me-2"></i>Coluna Chave (Opcional)
+                        </label>
+                        <input type="text" class="form-control" id="key_column" name="key_column" 
+                               placeholder="Nome da coluna que será usada como chave primária">
+                        <div class="form-text">
+                            Se não especificado, a primeira coluna será usada como chave.
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-search me-2"></i>Comparar Arquivos
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>Como funciona a comparação?
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <i class="fas fa-plus-circle fa-2x text-success mb-2"></i>
+                            <h6>Linhas Novas</h6>
+                            <small class="text-muted">
+                                Registros que existem apenas no segundo arquivo
+                            </small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <i class="fas fa-minus-circle fa-2x text-danger mb-2"></i>
+                            <h6>Linhas Removidas</h6>
+                            <small class="text-muted">
+                                Registros que existem apenas no primeiro arquivo
+                            </small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <i class="fas fa-edit fa-2x text-warning mb-2"></i>
+                            <h6>Linhas Alteradas</h6>
+                            <small class="text-muted">
+                                Registros que tiveram conteúdo modificado
+                            </small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <i class="fas fa-columns fa-2x text-info mb-2"></i>
+                            <h6>Colunas Diferentes</h6>
+                            <small class="text-muted">
+                                Colunas adicionadas ou removidas entre arquivos
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% else %}
+<!-- Resultados da Comparação -->
+<div class="row">
+    <div class="col-12">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-bar me-2"></i>Resumo da Comparação
+                    <span class="badge bg-success ms-2">
+                        <i class="fas fa-save me-1"></i>Salvo no Sistema
+                    </span>
+                    {% if not is_admin %}
+                        <span class="badge bg-warning ms-2">
+                            <i class="fas fa-eye-slash me-1"></i>Histórico Restrito
+                        </span>
+                    {% endif %}
+                </h5>
+            </div>
+            <div class="card-body">
+                <!-- NOVA FUNCIONALIDADE: Resumo expandido com colunas -->
+                <div class="row text-center">
+                    <div class="col-md-2">
+                        <div class="border rounded p-3">
+                            <h3 class="text-success">{{ result.summary.new_rows }}</h3>
+                            <small class="text-muted">Linhas Novas</small>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="border rounded p-3">
+                            <h3 class="text-danger">{{ result.summary.removed_rows }}</h3>
+                            <small class="text-muted">Linhas Removidas</small>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="border rounded p-3">
+                            <h3 class="text-warning">{{ result.summary.modified_rows }}</h3>
+                            <small class="text-muted">Linhas Alteradas</small>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="border rounded p-3">
+                            <h3 class="text-info">{{ result.summary.unchanged_rows }}</h3>
+                            <small class="text-muted">Linhas Inalteradas</small>
+                        </div>
+                    </div>
+                    <!-- NOVA FUNCIONALIDADE: Caixas de estatísticas para colunas -->
+                    <div class="col-md-2">
+                        <div class="border rounded p-3">
+                            <h3 class="text-primary">{{ result.summary.columns_added }}</h3>
+                            <small class="text-muted">Colunas Adicionadas</small>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="border rounded p-3">
+                            <h3 class="text-secondary">{{ result.summary.columns_removed }}</h3>
+                            <small class="text-muted">Colunas Removidas</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-3 d-flex justify-content-between align-items-center">
+                    <small class="text-muted">
+                        <strong>Coluna chave utilizada:</strong> {{ result.key_column }}
+                    </small>
+                    {% if not is_admin %}
+                    <small class="text-info">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Esta comparação foi registrada no sistema (ID: #{{ comparison_id }})
+                    </small>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- NOVA FUNCIONALIDADE: Seção para mostrar diferenças de colunas -->
+        {% if result.columns_added or result.columns_removed %}
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-info text-white">
+                        <h6 class="mb-0">
+                            <i class="fas fa-columns me-2"></i>Diferenças nas Colunas
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            {% if result.columns_added %}
+                            <div class="col-md-6">
+                                <div class="alert alert-success">
+                                    <h6><i class="fas fa-plus-circle me-2"></i>Colunas Adicionadas no Arquivo 2:</h6>
+                                    <ul class="mb-0">
+                                        {% for col in result.columns_added %}
+                                        <li><code>{{ col }}</code></li>
+                                        {% endfor %}
+                                    </ul>
+                                    <small class="text-muted mt-2 d-block">
+                                        Essas colunas existem apenas no segundo arquivo.
+                                    </small>
+                                </div>
+                            </div>
+                            {% endif %}
+                            {% if result.columns_removed %}
+                            <div class="col-md-6">
+                                <div class="alert alert-danger">
+                                    <h6><i class="fas fa-minus-circle me-2"></i>Colunas Removidas do Arquivo 1:</h6>
+                                    <ul class="mb-0">
+                                        {% for col in result.columns_removed %}
+                                        <li><code>{{ col }}</code></li>
+                                        {% endfor %}
+                                    </ul>
+                                    <small class="text-muted mt-2 d-block">
+                                        Essas colunas existem apenas no primeiro arquivo.
+                                    </small>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% if not result.columns_added and not result.columns_removed %}
+                        <div class="text-center py-2">
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            <span class="text-success">Todos os arquivos têm as mesmas colunas.</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if not is_admin %}
+        <div class="alert alert-info">
+            <i class="fas fa-database me-2"></i>
+            <strong>Comparação Salva:</strong> Esta comparação foi registrada no banco de dados e pode ser visualizada 
+            por administradores no histórico do sistema. Usuários teste não têm acesso ao histórico de comparações.
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Abas com os resultados -->
+<div class="row">
+    <div class="col-12">
+        <ul class="nav nav-tabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#new-rows" 
+                        type="button" role="tab">
+                    <i class="fas fa-plus-circle text-success me-1"></i>
+                    Linhas Novas ({{ result.summary.new_rows }})
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#removed-rows" 
+                        type="button" role="tab">
+                    <i class="fas fa-minus-circle text-danger me-1"></i>
+                    Linhas Removidas ({{ result.summary.removed_rows }})
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#modified-rows" 
+                        type="button" role="tab">
+                    <i class="fas fa-edit text-warning me-1"></i>
+                    Linhas Alteradas ({{ result.summary.modified_rows }})
+                </button>
+            </li>
+            <!-- NOVA FUNCIONALIDADE: Aba para diferenças de colunas (opcional, só se houver diferenças) -->
+            {% if result.columns_added or result.columns_removed %}
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#column-differences" 
+                        type="button" role="tab">
+                    <i class="fas fa-columns text-info me-1"></i>
+                    Diferenças nas Colunas ({{ result.summary.columns_added + result.summary.columns_removed }})
+                </button>
+            </li>
+            {% endif %}
+        </ul>
+        
+        <div class="tab-content mt-3">
+            <!-- Linhas Novas -->
+            <div class="tab-pane fade show active" id="new-rows" role="tabpanel">
+                {% if result.tables.new_rows %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead class="table-success">
+                            <tr>
+                                {% for key in result.tables.new_rows[0].keys() %}
+                                <th>{{ key }}</th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in result.tables.new_rows %}
+                            <tr>
+                                {% for value in row.values() %}
+                                <td>{{ value if value is not none else '<em class="text-muted">vazio</em>' }}</td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-check-circle fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">Nenhuma linha nova encontrada.</p>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Linhas Removidas -->
+            <div class="tab-pane fade" id="removed-rows" role="tabpanel">
+                {% if result.tables.removed_rows %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead class="table-danger">
+                            <tr>
+                                {% for key in result.tables.removed_rows[0].keys() %}
+                                <th>{{ key }}</th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in result.tables.removed_rows %}
+                            <tr>
+                                {% for value in row.values() %}
+                                <td>{{ value if value is not none else '<em class="text-muted">vazio</em>' }}</td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-check-circle fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">Nenhuma linha foi removida.</p>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Linhas Alteradas -->
+            <div class="tab-pane fade" id="modified-rows" role="tabpanel">
+                {% if result.tables.modified_rows %}
+                {% for row in result.tables.modified_rows %}
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <strong>Chave: {{ row.key }}</strong>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Campo</th>
+                                        <th class="text-danger">Valor Antigo</th>
+                                        <th class="text-success">Valor Novo</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for field, change in row.changes.items() %}
+                                    <tr>
+                                        <td><strong>{{ field }}</strong></td>
+                                        <td class="text-danger">{{ change.old if change.old is not none else '<em class="text-muted">vazio</em>' }}</td>
+                                        <td class="text-success">{{ change.new if change.new is not none else '<em class="text-muted">vazio</em>' }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-check-circle fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">Nenhuma linha foi alterada.</p>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- NOVA FUNCIONALIDADE: Aba para diferenças nas colunas -->
+            {% if result.columns_added or result.columns_removed %}
+            <div class="tab-pane fade" id="column-differences" role="tabpanel">
+                <div class="row">
+                    {% if result.columns_added %}
+                    <div class="col-md-6">
+                        <div class="card border-success">
+                            <div class="card-header bg-success text-white">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-plus-circle me-2"></i>Colunas Adicionadas ({{ result.summary.columns_added }})
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <p class="text-muted">Essas colunas existem apenas no <strong>segundo arquivo</strong>:</p>
+                                <ul class="list-group list-group-flush">
+                                    {% for col in result.columns_added %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <code>{{ col }}</code>
+                                        <span class="badge bg-success rounded-pill">+</span>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if result.columns_removed %}
+                    <div class="col-md-6">
+                        <div class="card border-danger">
+                            <div class="card-header bg-danger text-white">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-minus-circle me-2"></i>Colunas Removidas ({{ result.summary.columns_removed }})
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <p class="text-muted">Essas colunas existem apenas no <strong>primeiro arquivo</strong>:</p>
+                                <ul class="list-group list-group-flush">
+                                    {% for col in result.columns_removed %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <code>{{ col }}</code>
+                                        <span class="badge bg-danger rounded-pill">-</span>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                {% if not result.columns_added and not result.columns_removed %}
+                <div class="text-center py-4">
+                    <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                    <p class="text-success">Ambos os arquivos possuem exatamente as mesmas colunas!</p>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12 text-center">
+        <a href="{{ url_for('compare') }}" class="btn btn-primary">
+            <i class="fas fa-plus me-1"></i>Nova Comparação
+        </a>
+        {% if is_admin %}
+        <a href="{{ url_for('history') }}" class="btn btn-outline-secondary ms-2">
+            <i class="fas fa-history me-1"></i>Ver Histórico
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+{% endif %}
+{% endblock %}S

@@ -1,0 +1,289 @@
+{% extends "base.html" %}
+
+{% block title %}Histórico de Comparações{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i class="fas fa-history me-2"></i>Histórico Completo - Administrador</h1>
+            <a href="{{ url_for('compare') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-1"></i>Nova Comparação
+            </a>
+        </div>
+        
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle me-2"></i>
+            <strong>Visualização Administrativa:</strong> Este histórico contém <strong>todas as comparações</strong> 
+            realizadas no sistema por usuários teste e administradores.
+        </div>
+    </div>
+</div>
+
+{% if comparacoes.items %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Data/Hora</th>
+                                <th>Usuário</th>
+                                <th>Arquivos</th>
+                                <th>Resultado</th>
+                                <th class="text-center">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for comparacao in comparacoes.items %}
+                            <tr>
+                                <td>
+                                    <span class="badge bg-light text-dark">#{{ comparacao.id }}</span>
+                                </td>
+                                <td>
+                                    <i class="fas fa-calendar-alt me-2 text-muted"></i>
+                                    {{ comparacao.data.strftime('%d/%m/%Y') }}<br>
+                                    <small class="text-muted">
+                                        {{ comparacao.data.strftime('%H:%M:%S') }}
+                                    </small>
+                                </td>
+                                <td>
+                                    <div>
+                                        <i class="fas fa-user me-1 text-primary"></i>
+                                        <strong>{{ comparacao.usuario.nome }}</strong>
+                                    </div>
+                                    <small class="text-muted">{{ comparacao.usuario.email }}</small>
+                                    <br>
+                                    <span class="badge bg-{{ 'primary' if comparacao.usuario.nivel == 'admin' else 'success' }} mt-1">
+                                        <i class="fas fa-{{ 'crown' if comparacao.usuario.nivel == 'admin' else 'user' }} me-1"></i>
+                                        {{ 'Administrador' if comparacao.usuario.nivel == 'admin' else 'Usuário Teste' }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="mb-1">
+                                        <i class="fas fa-file text-primary me-1"></i>
+                                        <strong>Arquivo 1:</strong>
+                                        <br><small class="text-muted">{{ comparacao.arquivo1 }}</small>
+                                    </div>
+                                    <div>
+                                        <i class="fas fa-file text-info me-1"></i>
+                                        <strong>Arquivo 2:</strong>
+                                        <br><small class="text-muted">{{ comparacao.arquivo2 }}</small>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="row">
+                                        <div class="col-12">
+                                            <span class="badge bg-success me-1 mb-1">
+                                                <i class="fas fa-plus me-1"></i>{{ comparacao.linhas_novas }} novas
+                                            </span>
+                                            <br>
+                                            <span class="badge bg-danger me-1 mb-1">
+                                                <i class="fas fa-minus me-1"></i>{{ comparacao.linhas_removidas }} removidas
+                                            </span>
+                                            <br>
+                                            <span class="badge bg-warning mb-1">
+                                                <i class="fas fa-edit me-1"></i>{{ comparacao.linhas_alteradas }} alteradas
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <small class="text-muted mt-2 d-block">
+                                        <strong>Total:</strong> {{ comparacao.linhas_novas + comparacao.linhas_removidas + comparacao.linhas_alteradas }} diferenças
+                                    </small>
+                                </td>
+                                <td class="text-center">
+                                    <a href="{{ url_for('view_comparison', comparison_id=comparacao.id) }}" 
+                                       class="btn btn-sm btn-outline-primary" title="Ver detalhes da comparação">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Paginação -->
+                {% if comparacoes.pages > 1 %}
+                <nav aria-label="Paginação do histórico">
+                    <ul class="pagination justify-content-center mt-4">
+                        {% if comparacoes.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('history', page=comparacoes.prev_num) }}">
+                                    <i class="fas fa-chevron-left"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                        
+                        {% for page_num in comparacoes.iter_pages() %}
+                            {% if page_num %}
+                                {% if page_num != comparacoes.page %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('history', page=page_num) }}">
+                                            {{ page_num }}
+                                        </a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ page_num }}</span>
+                                    </li>
+                                {% endif %}
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">…</span>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if comparacoes.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('history', page=comparacoes.next_num) }}">
+                                    <i class="fas fa-chevron-right"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                
+                <div class="text-center text-muted">
+                    <small>
+                        Mostrando {{ comparacoes.per_page * (comparacoes.page - 1) + 1 }} a 
+                        {{ comparacoes.per_page * (comparacoes.page - 1) + comparacoes.items|length }} 
+                        de {{ comparacoes.total }} comparações registradas no sistema
+                    </small>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% else %}
+<!-- Estado vazio -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <i class="fas fa-history fa-4x text-muted mb-4"></i>
+                <h3 class="text-muted">Nenhuma comparação registrada</h3>
+                <p class="text-muted mb-4">
+                    Ainda não há comparações realizadas no sistema por nenhum usuário.
+                </p>
+                <a href="{{ url_for('compare') }}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-plus me-2"></i>Realizar primeira comparação
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Estatísticas do sistema -->
+<div class="row mt-4">
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-chart-line fa-2x text-primary mb-3"></i>
+                <h5>{{ comparacoes.total }}</h5>
+                <small class="text-muted">Total de Comparações</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-calendar-check fa-2x text-success mb-3"></i>
+                <h5>
+                    {% if comparacoes.items %}
+                        {{ comparacoes.items[0].data.strftime('%d/%m/%Y') }}
+                    {% else %}
+                        --
+                    {% endif %}
+                </h5>
+                <small class="text-muted">Última Comparação</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-users fa-2x text-info mb-3"></i>
+                <h5>
+                    {% if comparacoes.items %}
+                        {% set unique_users = comparacoes.items | map(attribute='usuario') | map(attribute='id') | list | unique | list %}
+                        {{ unique_users | length }}
+                    {% else %}
+                        0
+                    {% endif %}
+                </h5>
+                <small class="text-muted">Usuários Ativos</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-user-cog fa-2x text-warning mb-3"></i>
+                <h5>
+                    {% if comparacoes.items %}
+                        {% set admin_comparisons = comparacoes.items | selectattr('usuario.nivel', 'equalto', 'admin') | list %}
+                        {{ admin_comparisons | length }}
+                    {% else %}
+                        0
+                    {% endif %}
+                </h5>
+                <small class="text-muted">Por Administradores</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Resumo por tipo de usuário -->
+<div class="row mt-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-chart-pie me-2"></i>Distribuição por Tipo de Usuário
+                </h6>
+            </div>
+            <div class="card-body">
+                {% if comparacoes.items %}
+                    {% set test_comparisons = comparacoes.items | selectattr('usuario.nivel', 'equalto', 'usuario') | list %}
+                    {% set admin_comparisons = comparacoes.items | selectattr('usuario.nivel', 'equalto', 'admin') | list %}
+                    
+                    <div class="row text-center">
+                        <div class="col-md-6">
+                            <div class="p-3">
+                                <i class="fas fa-user fa-2x text-success mb-2"></i>
+                                <h4 class="text-success">{{ test_comparisons | length }}</h4>
+                                <small class="text-muted">Comparações de Usuários Teste</small>
+                                <div class="progress mt-2">
+                                    <div class="progress-bar bg-success" style="width: {{ (test_comparisons | length / comparacoes.total * 100) | round(1) }}%"></div>
+                                </div>
+                                <small class="text-muted">{{ (test_comparisons | length / comparacoes.total * 100) | round(1) }}%</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3">
+                                <i class="fas fa-crown fa-2x text-primary mb-2"></i>
+                                <h4 class="text-primary">{{ admin_comparisons | length }}</h4>
+                                <small class="text-muted">Comparações de Administradores</small>
+                                <div class="progress mt-2">
+                                    <div class="progress-bar bg-primary" style="width: {{ (admin_comparisons | length / comparacoes.total * 100) | round(1) }}%"></div>
+                                </div>
+                                <small class="text-muted">{{ (admin_comparisons | length / comparacoes.total * 100) | round(1) }}%</small>
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center mb-0">Nenhuma estatística disponível ainda.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
